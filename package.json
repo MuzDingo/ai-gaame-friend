@@ -1,0 +1,17 @@
+{
+  "name": "ai-game-friend",
+  "version": "0.1.0",
+  "description": "A customizable AI friend that hangs out on Discord and plays co-op games like Minecraft with you.",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "check": "node --check src/index.js && node --check src/profiles.js && node --check src/brain.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.11.0",
+    "discord.js": "^14.28.1",
+    "dotenv": "^18.0.10"
+  }
+}
