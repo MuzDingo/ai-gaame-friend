@@ -5,6 +5,7 @@ import { loadProfile, setField, resetProfile, buildSystemPrompt, FIELDS } from "
 import { getReply } from "./brain.js";
 import { joinVoice, leaveVoice } from "./voice.js";
 import { voiceEnabled, DEFAULT_VOICE } from "./speech.js";
+import { memoryPrompt, noteExchange, loadMemory, forgetUser, flushAll } from "./memory.js";
 
 const PREFIX = (process.env.COMMAND_PREFIX || "!friend").toLowerCase();
 const HISTORY_LENGTH = Number(process.env.HISTORY_LENGTH) || 20;
@@ -79,6 +80,8 @@ function helpText() {
     `\`${PREFIX} set <setting> <value>\`: change a setting, e.g. \`${PREFIX} set kindness 9\``,
     `\`${PREFIX} reset\`: go back to the default friend`,
     `\`${PREFIX} forget\`: clear the recent chat in this channel`,
+    `\`${PREFIX} memories\`: see what your friend remembers about you`,
+    `\`${PREFIX} forgetme\`: erase everything your friend remembers about you`,
     `\`${PREFIX} join\`: join the voice channel you're in and talk out loud`,
     `\`${PREFIX} leave\`: leave the voice channel`,
     "",
@@ -107,6 +110,15 @@ async function handleCommand(message, args) {
     case "reset":
       resetProfile(userId);
       return message.reply("Your friend is back to the default settings.");
+    case "memories": {
+      const { facts } = loadMemory(userId);
+      if (!facts.length) return message.reply("I don't have any memories about you saved yet. Let's chat more! (I save them every few messages.)");
+      const list = facts.map((f) => `• ${f}`).join("\n");
+      return message.reply(`Here's what I remember about you:\n${list}`.slice(0, 1900));
+    }
+    case "forgetme":
+      forgetUser(userId);
+      return message.reply("Done. I've erased everything I remembered about you. Fresh start!");
     case "join": {
       if (!message.guild) return message.reply("Voice chat only works in a server, not in DMs.");
       if (!voiceEnabled()) {
@@ -146,8 +158,10 @@ async function handleVoiceLine(guild, textChannel, speakerId, transcript) {
   const speaker = member.displayName;
   const profile = loadProfile(speakerId);
   const history = remember(textChannel.id, "user", `${speaker} (voice): ${transcript}`);
-  const reply = await getReply(buildSystemPrompt(profile, speaker) + VOICE_RULES, history.map((m) => ({ ...m })));
+  const system = buildSystemPrompt(profile, speaker) + memoryPrompt(speakerId, speaker) + VOICE_RULES;
+  const reply = await getReply(system, history.map((m) => ({ ...m })));
   remember(textChannel.id, "assistant", reply);
+  noteExchange(speakerId, speaker, transcript, reply);
   // Also post the conversation as text, so testers can see what was heard.
   textChannel.send(`🎤 **${speaker}:** ${transcript}\n🔊 **${profile.name}:** ${reply}`).catch(() => {});
   return { reply, voice: profile.voice || DEFAULT_VOICE };
@@ -176,12 +190,13 @@ client.on("messageCreate", async (message) => {
 
   // The person who spoke picks which custom friend answers them.
   const profile = loadProfile(message.author.id);
-  const systemPrompt = buildSystemPrompt(profile, speaker);
+  const systemPrompt = buildSystemPrompt(profile, speaker) + memoryPrompt(message.author.id, speaker);
 
   try {
     await message.channel.sendTyping();
     const reply = await getReply(systemPrompt, history.map((m) => ({ ...m })));
     remember(message.channel.id, "assistant", reply);
+    noteExchange(message.author.id, speaker, cleaned, reply);
     const [first, ...rest] = splitForDiscord(reply);
     await message.reply(first);
     for (const part of rest) await message.channel.send(part);
@@ -190,5 +205,18 @@ client.on("messageCreate", async (message) => {
     await message.reply("Oops, my brain glitched for a second. Try again in a moment?");
   }
 });
+
+// Save memories before shutting down (Ctrl + C).
+let shuttingDown = false;
+async function shutdown() {
+  if (shuttingDown) process.exit(0);
+  shuttingDown = true;
+  console.log("Saving memories before shutting down...");
+  await flushAll();
+  client.destroy();
+  process.exit(0);
+}
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
 
 client.login(process.env.DISCORD_TOKEN);

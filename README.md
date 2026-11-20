@@ -2,14 +2,15 @@
 
 A customizable AI friend that hangs out on Discord and plays co-op games like Minecraft with you.
 
-**Status: step 1 of 4, plus voice chat.** Your friend can chat in Discord text channels, direct messages and voice channels, and every tester can customize their own friend. Long-term memory and Minecraft play come next.
+**Status: steps 1 and 2 of 4.** Your friend chats in Discord text and voice, every tester can customize their own friend, and it remembers the key things you tell it across days. Minecraft play comes next.
 
 ## What it can do right now
 
 - Chat naturally when you @mention it, send it a direct message, or talk in a channel you pick.
 - Each person gets their own friend: name, personality, character, kindness, humor, talkativeness, gamer skill, favorite games and extra notes.
 - Talks out loud in voice channels: type `!friend join` while you're in a voice channel, then just talk.
-- Remembers the last 20 or so messages in a channel during a chat. (It forgets on restart; real memory is step 2.)
+- Remembers the last 20 or so messages in a channel during a chat.
+- **Long-term memory:** every few messages it saves key points about you, like your favorite games, your projects, your pets and your inside jokes. It brings them up naturally in later chats, even after a restart.
 
 ## Customizing your friend (in Discord)
 
@@ -23,6 +24,8 @@ A customizable AI friend that hangs out on Discord and plays co-op games like Mi
 | `!friend set favoriteGames Minecraft, ARK, ASKA` | Comma separated list |
 | `!friend reset` | Back to the default friend |
 | `!friend forget` | Clears the recent chat in that channel |
+| `!friend memories` | Shows what your friend remembers about you |
+| `!friend forgetme` | Erases everything your friend remembers about you |
 | `!friend join` | Joins the voice channel you're in, listens, and talks back |
 | `!friend leave` | Leaves the voice channel |
 | `!friend set voice aura-2-orion-en` | Changes the voice it speaks with (see Voices below) |
@@ -93,6 +96,13 @@ Never share your `.env` file or post the keys anywhere. GitHub is already set up
 
 To stop the friend, click the Terminal window and press Ctrl + C. It's only online while that window is open. Later we can move it to a cheap always-on server.
 
+## How memory works
+
+- After about 6 messages from you, or 5 quiet minutes, the friend asks Claude to pick out the key points and saves them.
+- Memories are saved on the computer running the friend, in the `data/memories` folder, one file per person. They are never uploaded to GitHub.
+- When you stop the friend with Ctrl + C, it saves any unsaved memories first. Wait for it to finish before closing the window.
+- Testers can type `!friend memories` to see what it knows and `!friend forgetme` to erase it. Tell your testers about this. It's good practice to let people know what's saved about them.
+
 ## Using voice chat
 
 1. Join a voice channel in your server.
@@ -120,6 +130,8 @@ Deepgram lists all of its voices on its text-to-speech models page in the Deepgr
 - `CLAUDE_MODEL`: which Claude model it uses. The default is `claude-opus-5-5`. `claude-sonnet-5-5` and `claude-haiku-5-5` cost less.
 - `FRIEND_CHANNEL_IDS`: channels where it answers every message without an @mention. To get a channel ID, turn on Developer Mode in Discord (User Settings > Advanced), then right-click the channel and choose **Copy Channel ID**.
 - `HISTORY_LENGTH`: how many recent messages it keeps in mind during a chat.
+- `MEMORY_SAVE_EVERY`: how many messages from a person before it saves memories (default 6).
+- `MEMORY_MAX_FACTS`: the most things it remembers about one person (default 40).
 - `VOICE_SILENCE_MS`: how long a pause (in milliseconds) means you've finished talking. Raise it to 1200 if it cuts you off. Lower it to 700 if it feels slow.
 
 ## Troubleshooting
@@ -135,6 +147,6 @@ Deepgram lists all of its voices on its text-to-speech models page in the Deepgr
 ## Roadmap
 
 1. **Discord companion core** with voice chat (this version)
-2. **Memory** of the key things you tell it, across days
+2. **Memory** of the key things you tell it, across days (this version)
 3. **Minecraft**: joins your server as a player, with a gamer skill setting
 4. **5-person trial**: feedback form and results summary
