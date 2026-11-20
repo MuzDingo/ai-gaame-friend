@@ -98,7 +98,21 @@ async function handleUtterance(session, userId, pcm, onSpeech) {
   const result = await onSpeech(userId, transcript);
   if (!result?.reply) return;
 
-  const audio = await textToSpeech(result.reply, result.voice);
+  await playText(session, result.reply, result.voice);
+}
+
+// Say something out loud in the voice channel (e.g. a hello when joining).
+export async function sayInVoice(guildId, text, voice) {
+  const session = sessions.get(guildId);
+  if (!session) return;
+  session.queue = session.queue.then(() => playText(session, text, voice)).catch((err) => {
+    console.error("Voice error:", err);
+  });
+  return session.queue;
+}
+
+async function playText(session, text, voice) {
+  const audio = await textToSpeech(text, voice);
   session.speaking = true;
   try {
     session.player.play(createAudioResource(Readable.from([audio]), { inputType: StreamType.Raw }));

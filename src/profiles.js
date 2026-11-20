@@ -18,6 +18,7 @@ export const FIELDS = {
   talkativeness: { type: "number", help: "1 = short replies, 10 = chatty" },
   gamerSkill: { type: "number", help: "1 = clueless newbie, 10 = pro player" },
   favoriteGames: { type: "list", help: "Comma separated, e.g. Minecraft, ARK" },
+  greeting: { type: "text", help: "What it says when it joins voice. Leave unset and it makes up a fresh hello each time" },
   voice: { type: "text", help: "Voice in voice chat, e.g. aura-2-thalia-en or aura-2-orion-en (list in README)" },
   extraNotes: { type: "text", help: "Anything else about how they should act" },
 };

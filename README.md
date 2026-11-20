@@ -28,6 +28,7 @@ A customizable AI friend that hangs out on Discord and plays co-op games like Mi
 | `!friend forgetme` | Erases everything your friend remembers about you |
 | `!friend join` | Joins the voice channel you're in, listens, and talks back |
 | `!friend leave` | Leaves the voice channel |
+| `!friend set greeting Hey hey, Pixel's here!` | What it says out loud when it joins voice. Without this, it makes up a fresh hello each time |
 | `!friend set voice aura-2-orion-en` | Changes the voice it speaks with (see Voices below) |
 
 The default friend, "Pixel", lives in `profiles/default.json`. You can edit that file to change who everyone starts with.
@@ -106,7 +107,7 @@ To stop the friend, click the Terminal window and press Ctrl + C. It's only onli
 ## Using voice chat
 
 1. Join a voice channel in your server.
-2. In any text channel, type `!friend join`. The friend joins your voice channel.
+2. In any text channel, type `!friend join`. The friend joins your voice channel and says hello.
 3. Talk normally. When you pause for about a second, it answers out loud. It also posts what it heard and what it said in the text channel, which helps you spot problems.
 4. Type `!friend leave` when you're done.
 

@@ -3,7 +3,7 @@ import "dotenv/config";
 import { Client, GatewayIntentBits, Partials, ChannelType } from "discord.js";
 import { loadProfile, setField, resetProfile, buildSystemPrompt, FIELDS } from "./profiles.js";
 import { getReply } from "./brain.js";
-import { joinVoice, leaveVoice } from "./voice.js";
+import { joinVoice, leaveVoice, sayInVoice } from "./voice.js";
 import { voiceEnabled, DEFAULT_VOICE } from "./speech.js";
 import { memoryPrompt, noteExchange, loadMemory, forgetUser, flushAll } from "./memory.js";
 
@@ -127,7 +127,9 @@ async function handleCommand(message, args) {
       try {
         const channel = await joinVoice(message.member, message.channel, (speakerId, transcript) =>
           handleVoiceLine(message.guild, message.channel, speakerId, transcript));
-        return message.reply(`Joined **${channel.name}**! Just talk, and I'll answer out loud. Type \`${PREFIX} leave\` when you're done.`);
+        await message.reply(`Joined **${channel.name}**! Just talk, and I'll answer out loud. Type \`${PREFIX} leave\` when you're done.`);
+        greetInVoice(message.guild, message.channel, message.member).catch((err) => console.error("Greeting error:", err));
+        return;
       } catch (err) {
         console.error("Join error:", err);
         return message.reply(err.message.includes("voice channel first") ? err.message : "I couldn't join the voice channel. Check that I have permission to Connect and Speak there.");
@@ -150,6 +152,23 @@ const VOICE_RULES = [
   "- No emojis, markdown, lists, links or special symbols. Write numbers the way you'd say them.",
   "- The words you hear come from speech recognition and may have small mistakes. Guess the meaning instead of pointing them out.",
 ].join("\n");
+
+// Says hello out loud right after joining a voice channel.
+async function greetInVoice(guild, textChannel, member) {
+  const speaker = member.displayName;
+  const profile = loadProfile(member.id);
+  let greeting = (profile.greeting || "").trim();
+  if (!greeting) {
+    const system = buildSystemPrompt(profile, speaker) + memoryPrompt(member.id, speaker) + VOICE_RULES;
+    greeting = await getReply(system, [{
+      role: "user",
+      content: `(You just joined the voice channel because ${speaker} invited you. Say a short, natural hello in one or two sentences, in character. If you remember something about them, you can mention it.)`,
+    }]);
+  }
+  remember(textChannel.id, "assistant", greeting);
+  textChannel.send(`🔊 **${profile.name}:** ${greeting}`).catch(() => {});
+  await sayInVoice(guild.id, greeting, profile.voice || DEFAULT_VOICE);
+}
 
 // Called when someone finishes saying something in voice chat.
 async function handleVoiceLine(guild, textChannel, speakerId, transcript) {
