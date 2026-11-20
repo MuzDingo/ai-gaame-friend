@@ -33,7 +33,8 @@ A customizable AI friend that hangs out on Discord and plays co-op games like Mi
 | `!friend join` | Joins the voice channel you're in, listens, and talks back |
 | `!friend leave` | Leaves the voice channel |
 | `!friend set greeting Hey hey, Pixel's here!` | What it says out loud when it joins voice. Without this, it makes up a fresh hello each time |
-| `!friend set voice aura-2-orion-en` | Changes the voice it speaks with (see Voices below) |
+| `!friend voices` | Lists all the voices you can pick |
+| `!friend set voice luna` | Changes the voice it speaks with |
 
 The default friend, "Pixel", lives in `profiles/default.json`. You can edit that file to change who everyone starts with.
 
@@ -149,23 +150,19 @@ The friend speaks plain Minecraft. Vanilla servers, and Fabric/Paper/Spigot serv
 
 1. Join a voice channel in your server.
 2. In any text channel, type `!friend join`. The friend joins your voice channel and says hello.
-3. Talk normally. When you pause for about a second, it answers out loud. It also posts what it heard and what it said in the text channel, which helps you spot problems.
+3. Talk normally. When you pause, it answers out loud and starts speaking as soon as its first sentence is ready.
 4. Type `!friend leave` when you're done.
 
 Tips: use headphones so the friend doesn't hear itself, and talk one at a time. It answers each person with that person's own custom friend settings.
 
 ### Voices
 
-Change the voice with `!friend set voice <name>`. A few to try:
+Type `!friend voices` in Discord to see all 40+ voices, then pick one with its short name, e.g. `!friend set voice luna` or `!friend set voice orion`.
 
-| Name | Sounds like |
-|---|---|
-| `aura-2-thalia-en` | Clear, friendly female voice (default) |
-| `aura-2-luna-en` | Soft, calm female voice |
-| `aura-2-orion-en` | Relaxed male voice |
-| `aura-2-apollo-en` | Confident, casual male voice |
+- **Feminine:** thalia (default), luna, asteria, athena, aurora, andromeda, amalthea, callista, cora, cordelia, delia, electra, harmonia, helena, hera, iris, juno, minerva, ophelia, pandora, phoebe, selene, theia, vesta
+- **Masculine:** orion, apollo, arcas, aries, atlas, draco, hermes, hyperion, janus, jupiter, mars, neptune, odysseus, orpheus, pluto, saturn, zeus
 
-Deepgram lists all of its voices on its text-to-speech models page in the Deepgram docs. Any name starting with `aura-` works. If a name is wrong, the friend falls back to the default voice.
+If a name doesn't work, the friend uses the default voice instead, and the black window shows which name failed.
 
 ## Optional settings (in `.env`)
 
@@ -174,7 +171,9 @@ Deepgram lists all of its voices on its text-to-speech models page in the Deepgr
 - `HISTORY_LENGTH`: how many recent messages it keeps in mind during a chat.
 - `MEMORY_SAVE_EVERY`: how many messages from a person before it saves memories (default 6).
 - `MEMORY_MAX_FACTS`: the most things it remembers about one person (default 40).
-- `VOICE_SILENCE_MS`: how long a pause (in milliseconds) means you've finished talking. Raise it to 1200 if it cuts you off. Lower it to 700 if it feels slow.
+- `VOICE_SILENCE_MS`: how long a pause (in milliseconds) means you've finished talking. The default is 700. Raise it to 1000 if it cuts you off, or lower it to 500 for snappier replies.
+- `VOICE_TRANSCRIPTS`: set to `on` to also post what it heard and said in voice as text. This helps with troubleshooting. It's off by default.
+- `VOICE_MODEL`: use a different Claude model just for voice. `claude-haiku-5-5` answers fastest and costs the least, while text chat keeps the main model.
 
 ## Troubleshooting
 

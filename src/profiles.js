@@ -20,7 +20,7 @@ export const FIELDS = {
   favoriteGames: { type: "list", help: "Comma separated, e.g. Minecraft, ARK" },
   greeting: { type: "text", help: "What it says when it joins voice. Leave unset and it makes up a fresh hello each time" },
   minecraftName: { type: "text", help: "Your Minecraft username, so your friend knows which player is you" },
-  voice: { type: "text", help: "Voice in voice chat, e.g. aura-2-thalia-en or aura-2-orion-en (list in README)" },
+  voice: { type: "text", help: "Voice in voice chat, e.g. luna or orion. Type !friend voices for the full list" },
   extraNotes: { type: "text", help: "Anything else about how they should act" },
 };
 

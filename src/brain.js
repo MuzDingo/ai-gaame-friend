@@ -5,9 +5,9 @@ const client = new Anthropic(); // reads ANTHROPIC_API_KEY from .env
 const MODEL = process.env.CLAUDE_MODEL || "claude-opus-5-5";
 const REFUSAL_REPLY = "Hmm, I'd rather not get into that one. Want to talk about something else?";
 
-function baseRequest(systemPrompt, messages) {
+function baseRequest(systemPrompt, messages, model = MODEL) {
   return {
-    model: MODEL,
+    model,
     max_tokens: 1024,
     // Casual chat doesn't need deep thinking; low effort keeps replies quick and cheap.
     output_config: { effort: "low" },
@@ -58,4 +58,47 @@ export async function getReplyWithTools(systemPrompt, history, tools, runTool) {
     messages.push({ role: "user", content: results });
   }
   return "Okay!";
+}
+
+// Streams the reply and calls onSentence(text) for each finished sentence,
+// so voice can start speaking right away. Returns the whole reply.
+export async function streamReply(systemPrompt, history, onSentence, model) {
+  const stream = client.beta.messages.stream(baseRequest(systemPrompt, history.map((m) => ({ ...m })), model || MODEL));
+  let buffer = "";
+  let spoken = "";
+  // Finds where the first sentence (at least 12 characters) ends in the buffer.
+  const sentenceEnd = () => {
+    const ends = /[.!?…]+["')\]]*\s+/g;
+    let m;
+    while ((m = ends.exec(buffer))) {
+      const cut = m.index + m[0].length;
+      if (buffer.slice(0, cut).trim().length >= 12) return cut;
+    }
+    return -1;
+  };
+  const flush = (final) => {
+    while (true) {
+      let cut = sentenceEnd();
+      if (cut < 0 && buffer.length > 180) cut = buffer.lastIndexOf(" ", 180) + 1 || buffer.length;
+      if (cut < 0 && final && buffer.trim()) cut = buffer.length;
+      if (cut <= 0) return;
+      const sentence = buffer.slice(0, cut).trim();
+      buffer = buffer.slice(cut);
+      if (sentence) {
+        spoken += (spoken ? " " : "") + sentence;
+        onSentence(sentence);
+      }
+    }
+  };
+  stream.on("text", (delta) => {
+    buffer += delta;
+    flush(false);
+  });
+  const message = await stream.finalMessage();
+  if (message.stop_reason === "refusal" && !spoken) {
+    onSentence(REFUSAL_REPLY);
+    return REFUSAL_REPLY;
+  }
+  flush(true);
+  return spoken || "...";
 }

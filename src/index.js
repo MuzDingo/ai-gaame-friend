@@ -2,12 +2,16 @@
 import "dotenv/config";
 import { Client, GatewayIntentBits, Partials, ChannelType } from "discord.js";
 import { loadProfile, setField, resetProfile, buildSystemPrompt, FIELDS } from "./profiles.js";
-import { getReply, getReplyWithTools } from "./brain.js";
+import { getReply, getReplyWithTools, streamReply } from "./brain.js";
 import * as mc from "./minecraft.js";
 import { joinVoice, leaveVoice, sayInVoice } from "./voice.js";
-import { voiceEnabled, DEFAULT_VOICE } from "./speech.js";
+import { voiceEnabled, DEFAULT_VOICE, VOICES } from "./speech.js";
 import { memoryPrompt, noteExchange, loadMemory, forgetUser, flushAll } from "./memory.js";
 
+// Post what was heard and said in voice as text too? Off unless VOICE_TRANSCRIPTS=on.
+const VOICE_TRANSCRIPTS = /^(on|true|yes|1)$/i.test(process.env.VOICE_TRANSCRIPTS || "");
+// Optional faster model just for voice, e.g. claude-haiku-5-5.
+const VOICE_MODEL = process.env.VOICE_MODEL || undefined;
 const PREFIX = (process.env.COMMAND_PREFIX || "!friend").toLowerCase();
 const HISTORY_LENGTH = Number(process.env.HISTORY_LENGTH) || 20;
 // Optional: channel IDs (comma separated) where the friend replies to every message.
@@ -85,6 +89,7 @@ function helpText() {
     `\`${PREFIX} forgetme\`: erase everything your friend remembers about you`,
     `\`${PREFIX} mc join <address>\`: join a Minecraft server (or \`${PREFIX} mc join <port>\` for your Open to LAN world)`,
     `\`${PREFIX} mc leave\` / \`${PREFIX} mc status\`: leave Minecraft or see what the friend is doing`,
+    `\`${PREFIX} voices\`: list the voices you can pick`,
     `\`${PREFIX} join\`: join the voice channel you're in and talk out loud`,
     `\`${PREFIX} leave\`: leave the voice channel`,
     "",
@@ -123,6 +128,13 @@ async function handleCommand(message, args) {
     case "forgetme":
       forgetUser(userId);
       return message.reply("Done. I've erased everything I remembered about you. Fresh start!");
+    case "voices":
+      return message.reply([
+        "**Voices** (set one with `" + PREFIX + " set voice luna`)",
+        `**Feminine:** ${VOICES.feminine.join(", ")}`,
+        `**Masculine:** ${VOICES.masculine.join(", ")}`,
+        "Join voice and try a few to find your favorite!",
+      ].join("\n"));
     case "mc":
     case "minecraft":
       return handleMinecraftCommand(message, [field, ...valueParts].filter(Boolean));
@@ -132,8 +144,8 @@ async function handleCommand(message, args) {
         return message.reply("Voice chat needs a DEEPGRAM_API_KEY in the .env file. See the README for how to get one.");
       }
       try {
-        const channel = await joinVoice(message.member, message.channel, (speakerId, transcript) =>
-          handleVoiceLine(message.guild, message.channel, speakerId, transcript));
+        const channel = await joinVoice(message.member, message.channel, (speakerId, transcript, say) =>
+          handleVoiceLine(message.guild, message.channel, speakerId, transcript, say));
         await message.reply(`Joined **${channel.name}**! Just talk, and I'll answer out loud. Type \`${PREFIX} leave\` when you're done.`);
         greetInVoice(message.guild, message.channel, message.member).catch((err) => console.error("Greeting error:", err));
         return;
@@ -272,24 +284,35 @@ async function greetInVoice(guild, textChannel, member) {
     }]);
   }
   remember(textChannel.id, "assistant", greeting);
-  textChannel.send(`🔊 **${profile.name}:** ${greeting}`).catch(() => {});
+  if (VOICE_TRANSCRIPTS) textChannel.send(`🔊 **${profile.name}:** ${greeting}`).catch(() => {});
   await sayInVoice(guild.id, greeting, profile.voice || DEFAULT_VOICE);
 }
 
 // Called when someone finishes saying something in voice chat.
-async function handleVoiceLine(guild, textChannel, speakerId, transcript) {
+// say(sentence, voice) speaks one sentence; sentences are spoken as soon as they're ready.
+async function handleVoiceLine(guild, textChannel, speakerId, transcript, say) {
   const member = await guild.members.fetch(speakerId).catch(() => null);
   if (!member || member.user.bot) return null;
   const speaker = member.displayName;
   const profile = loadProfile(speakerId);
+  const voice = profile.voice || DEFAULT_VOICE;
   const history = remember(textChannel.id, "user", `${speaker} (voice): ${transcript}`);
   const system = buildSystemPrompt(profile, speaker) + memoryPrompt(speakerId, speaker) + VOICE_RULES;
-  const reply = await think(system, history, profile);
+
+  let reply;
+  if (mc.isConnected()) {
+    // In Minecraft the friend may need to act first, so it answers once the action is done.
+    reply = await think(system, history, profile);
+    say(reply, voice);
+  } else {
+    reply = await streamReply(system, history, (sentence) => say(sentence, voice), VOICE_MODEL);
+  }
   remember(textChannel.id, "assistant", reply);
   noteExchange(speakerId, speaker, transcript, reply);
-  // Also post the conversation as text, so testers can see what was heard.
-  textChannel.send(`🎤 **${speaker}:** ${transcript}\n🔊 **${profile.name}:** ${reply}`).catch(() => {});
-  return { reply, voice: profile.voice || DEFAULT_VOICE };
+  if (VOICE_TRANSCRIPTS) {
+    textChannel.send(`🎤 **${speaker}:** ${transcript}\n🔊 **${profile.name}:** ${reply}`).catch(() => {});
+  }
+  return null;
 }
 
 client.once("ready", () => {

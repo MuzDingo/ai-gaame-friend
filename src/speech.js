@@ -5,6 +5,23 @@
 const KEY = () => process.env.DEEPGRAM_API_KEY;
 export const DEFAULT_VOICE = "aura-2-thalia-en";
 
+// Deepgram Aura voices you can pick with "!friend set voice <name>".
+export const VOICES = {
+  feminine: ["thalia", "luna", "asteria", "athena", "aurora", "andromeda", "amalthea", "callista", "cora",
+    "cordelia", "delia", "electra", "harmonia", "helena", "hera", "iris", "juno", "minerva", "ophelia",
+    "pandora", "phoebe", "selene", "theia", "vesta"],
+  masculine: ["orion", "apollo", "arcas", "aries", "atlas", "draco", "hermes", "hyperion", "janus",
+    "jupiter", "mars", "neptune", "odysseus", "orpheus", "pluto", "saturn", "zeus"],
+};
+
+// Turns a short name like "luna" into Deepgram's full voice id.
+export function resolveVoice(name) {
+  const v = String(name || "").trim().toLowerCase();
+  if (!v) return DEFAULT_VOICE;
+  if (v.startsWith("aura-")) return v;
+  return `aura-2-${v}-en`;
+}
+
 export function voiceEnabled() {
   return Boolean(KEY());
 }
@@ -26,7 +43,7 @@ export async function speechToText(pcm) {
 
 // Returns raw audio Discord can play (48 kHz, 2 channels, 16-bit).
 export async function textToSpeech(text, voice) {
-  const model = /^aura-/.test(voice || "") ? voice : DEFAULT_VOICE;
+  const model = resolveVoice(voice);
   try {
     return await speak(text, model);
   } catch (err) {
