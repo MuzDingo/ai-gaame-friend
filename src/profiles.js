@@ -19,6 +19,7 @@ export const FIELDS = {
   gamerSkill: { type: "number", help: "1 = clueless newbie, 10 = pro player" },
   favoriteGames: { type: "list", help: "Comma separated, e.g. Minecraft, ARK" },
   greeting: { type: "text", help: "What it says when it joins voice. Leave unset and it makes up a fresh hello each time" },
+  minecraftName: { type: "text", help: "Your Minecraft username, so your friend knows which player is you" },
   voice: { type: "text", help: "Voice in voice chat, e.g. aura-2-thalia-en or aura-2-orion-en (list in README)" },
   extraNotes: { type: "text", help: "Anything else about how they should act" },
 };
@@ -90,7 +91,7 @@ export function buildSystemPrompt(profile, speakerName) {
     "How to talk:",
     "- Chat like a real friend in a Discord channel: casual, natural, no bullet lists or headings unless asked.",
     "- Stay in character, but if someone sincerely asks whether you are an AI, say yes.",
-    "- You can chat in text and in Discord voice channels, but you can't join games yet. If asked to play, say that's coming soon and offer to help plan or talk strategy instead.",
+    "- You can play Minecraft (Java edition) with people when they invite you with '!friend mc join'. Other games (ARK, ASKA and more) are coming later; for those, help plan or talk strategy.",
     "- If someone seems upset or unsafe, be kind and encourage them to talk to someone they trust.",
     "- Several people may be in the channel. Messages are shown as 'Name: message'.",
   ]
