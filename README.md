@@ -2,7 +2,7 @@
 
 A customizable AI friend that hangs out on Discord and plays co-op games like Minecraft with you.
 
-**Status: steps 1 and 2 of 4.** Your friend chats in Discord text and voice, every tester can customize their own friend, and it remembers the key things you tell it across days. Minecraft play comes next.
+**Status: steps 1 and 2 of 4.** Your friend chats in Discord text and voice, every tester can customize their own friend, and it remembers the key things you tell it across days. It can also join you in Minecraft (Java edition) as a real player.
 
 ## What it can do right now
 
@@ -26,9 +26,15 @@ A customizable AI friend that hangs out on Discord and plays co-op games like Mi
 | `!friend forget` | Clears the recent chat in that channel |
 | `!friend memories` | Shows what your friend remembers about you |
 | `!friend forgetme` | Erases everything your friend remembers about you |
+| `!friend mc join <address>` | Joins a Minecraft server, e.g. `!friend mc join play.example.com` |
+| `!friend mc join <port>` | Joins your single player world after you click Open to LAN |
+| `!friend mc leave` / `!friend mc status` | Leaves Minecraft, or shows what it's doing |
+| `!friend set minecraftName Steve` | Tells your friend which Minecraft player is you |
 | `!friend join` | Joins the voice channel you're in, listens, and talks back |
 | `!friend leave` | Leaves the voice channel |
-| `!friend set voice aura-2-orion-en` | Changes the voice it speaks with (see Voices below) |
+| `!friend set greeting Hey hey, Pixel's here!` | What it says out loud when it joins voice. Without this, it makes up a fresh hello each time |
+| `!friend voices` | Lists all the voices you can pick |
+| `!friend set voice luna` | Changes the voice it speaks with |
 
 The default friend, "Pixel", lives in `profiles/default.json`. You can edit that file to change who everyone starts with.
 
@@ -96,6 +102,43 @@ Never share your `.env` file or post the keys anywhere. GitHub is already set up
 
 To stop the friend, click the Terminal window and press Ctrl + C. It's only online while that window is open. Later we can move it to a cheap always-on server.
 
+## Playing Minecraft together
+
+Your friend joins as a real player on **Minecraft Java edition**. It can:
+
+- **Follow you** around, or **come to you**
+- **Gather blocks**: wood, stone, ores, dirt, sand, and more
+- **Guard you** by fighting zombies, skeletons, spiders, and creepers near you (it never attacks players)
+- **Chat**: talk to it in Minecraft chat, here in Discord, or in voice. Saying "follow me" in voice works while you play.
+
+Its **gamer skill** setting (`!friend set gamerSkill 1` to `10`) changes how it plays. Low skill reacts slowly, doesn't sprint or parkour, and gathers less per trip. High skill reacts fast, sprints, spots mobs from further away, and fights better.
+
+### One-time setup
+
+1. **Make a Minecraft account for your friend.** It needs its own Microsoft account with Minecraft Java, just like a second player.
+2. Add these lines to your `.env` file:
+   ```
+   MC_USERNAME=the-friends-account-email@example.com
+   MC_AUTH=microsoft
+   ```
+3. Restart the friend (Ctrl + C, then `npm start`).
+4. In Discord, type `!friend set minecraftName YourMinecraftName` so it knows which player is you.
+5. The first time it joins, it posts a link and a code in Discord. Open the link, sign in with **the friend's** Microsoft account, and enter the code. It remembers the login after that.
+
+### Joining your single player world
+
+1. Open your world, press Esc, click **Open to LAN**, then **Start LAN World**.
+2. Minecraft shows a message like "Local game hosted on port **54321**".
+3. In Discord, type `!friend mc join 54321` (use your number). The friend must be running on the same PC, or on the same home network.
+
+### Joining a hosted server
+
+Type `!friend mc join the.server.address` (add `:port` if the server uses one). If the server has a whitelist, add the friend's Minecraft name to it first.
+
+### Modpacks
+
+The friend speaks plain Minecraft. Vanilla servers, and Fabric/Paper/Spigot servers with server-side plugins or mods, work. Modpacks that need every player to install the same mods (most Forge and NeoForge packs, big Fabric packs) won't let the friend join.
+
 ## How memory works
 
 - After about 6 messages from you, or 5 quiet minutes, the friend asks Claude to pick out the key points and saves them.
@@ -106,24 +149,20 @@ To stop the friend, click the Terminal window and press Ctrl + C. It's only onli
 ## Using voice chat
 
 1. Join a voice channel in your server.
-2. In any text channel, type `!friend join`. The friend joins your voice channel.
-3. Talk normally. When you pause for about a second, it answers out loud. It also posts what it heard and what it said in the text channel, which helps you spot problems.
+2. In any text channel, type `!friend join`. The friend joins your voice channel and says hello.
+3. Talk normally. When you pause, it answers out loud and starts speaking as soon as its first sentence is ready.
 4. Type `!friend leave` when you're done.
 
 Tips: use headphones so the friend doesn't hear itself, and talk one at a time. It answers each person with that person's own custom friend settings.
 
 ### Voices
 
-Change the voice with `!friend set voice <name>`. A few to try:
+Type `!friend voices` in Discord to see all 40+ voices, then pick one with its short name, e.g. `!friend set voice luna` or `!friend set voice orion`.
 
-| Name | Sounds like |
-|---|---|
-| `aura-2-thalia-en` | Clear, friendly female voice (default) |
-| `aura-2-luna-en` | Soft, calm female voice |
-| `aura-2-orion-en` | Relaxed male voice |
-| `aura-2-apollo-en` | Confident, casual male voice |
+- **Feminine:** thalia (default), luna, asteria, athena, aurora, andromeda, amalthea, callista, cora, cordelia, delia, electra, harmonia, helena, hera, iris, juno, minerva, ophelia, pandora, phoebe, selene, theia, vesta
+- **Masculine:** orion, apollo, arcas, aries, atlas, draco, hermes, hyperion, janus, jupiter, mars, neptune, odysseus, orpheus, pluto, saturn, zeus
 
-Deepgram lists all of its voices on its text-to-speech models page in the Deepgram docs. Any name starting with `aura-` works. If a name is wrong, the friend falls back to the default voice.
+If a name doesn't work, the friend uses the default voice instead, and the black window shows which name failed.
 
 ## Optional settings (in `.env`)
 
@@ -132,7 +171,9 @@ Deepgram lists all of its voices on its text-to-speech models page in the Deepgr
 - `HISTORY_LENGTH`: how many recent messages it keeps in mind during a chat.
 - `MEMORY_SAVE_EVERY`: how many messages from a person before it saves memories (default 6).
 - `MEMORY_MAX_FACTS`: the most things it remembers about one person (default 40).
-- `VOICE_SILENCE_MS`: how long a pause (in milliseconds) means you've finished talking. Raise it to 1200 if it cuts you off. Lower it to 700 if it feels slow.
+- `VOICE_SILENCE_MS`: how long a pause (in milliseconds) means you've finished talking. The default is 700. Raise it to 1000 if it cuts you off, or lower it to 500 for snappier replies.
+- `VOICE_TRANSCRIPTS`: set to `on` to also post what it heard and said in voice as text. This helps with troubleshooting. It's off by default.
+- `VOICE_MODEL`: use a different Claude model just for voice. `claude-haiku-5-5` answers fastest and costs the least, while text chat keeps the main model.
 
 ## Troubleshooting
 
@@ -142,11 +183,13 @@ Deepgram lists all of its voices on its text-to-speech models page in the Deepgr
 - **"Voice chat needs a DEEPGRAM_API_KEY"**: add your Deepgram key to `.env` (step 4b), then restart with Ctrl + C and `npm start`.
 - **"I couldn't join the voice channel"**: re-invite the bot with the Connect and Speak permissions (step 3.6).
 - **Joins voice but never answers**: check the black window for errors. Make sure your Discord microphone works and that you aren't muted. Try talking a bit longer, at least a full sentence.
+- **"Couldn't join Minecraft"**: check the address and port, make sure the world is still open to LAN, and check that the server version is Java edition. If it says the version isn't supported, set `MC_VERSION` in `.env` to the server's version, like `1.21.4`.
+- **Friend can't find you in Minecraft**: set `!friend set minecraftName` to your exact Minecraft name, and stand within about 30 blocks of it.
 - **It says "my brain glitched"**: look at the Terminal window for the error. Usually the Claude key is wrong or out of credit.
 
 ## Roadmap
 
 1. **Discord companion core** with voice chat (this version)
 2. **Memory** of the key things you tell it, across days (this version)
-3. **Minecraft**: joins your server as a player, with a gamer skill setting
+3. **Minecraft**: joins your server as a player, with a gamer skill setting (this version)
 4. **5-person trial**: feedback form and results summary

@@ -9,7 +9,7 @@ import { speechToText, textToSpeech } from "./speech.js";
 
 // Ignore clips shorter than this (coughs, clicks). 48000 Hz * 2 ch * 2 bytes = 192000 bytes/sec.
 const MIN_AUDIO_BYTES = 192000 * 0.5;
-const SILENCE_MS = Number(process.env.VOICE_SILENCE_MS) || 900;
+const SILENCE_MS = Number(process.env.VOICE_SILENCE_MS) || 700;
 
 const sessions = new Map(); // guildId -> session
 
@@ -95,16 +95,50 @@ async function handleUtterance(session, userId, pcm, onSpeech) {
   const transcript = await speechToText(pcm);
   if (!transcript) return;
 
-  const result = await onSpeech(userId, transcript);
-  if (!result?.reply) return;
+  // Each sentence is turned into speech as soon as it's written, and played in order,
+  // so the friend starts talking before the whole reply is finished.
+  let chain = Promise.resolve();
+  let saidSomething = false;
+  const say = (sentence, voice) => {
+    saidSomething = true;
+    session.speaking = true;
+    const audio = textToSpeech(sentence, voice);
+    audio.catch(() => {});
+    chain = chain.then(async () => playAudio(session, await audio)).catch((err) => console.error("Voice error:", err));
+    return chain;
+  };
 
-  const audio = await textToSpeech(result.reply, result.voice);
-  session.speaking = true;
   try {
-    session.player.play(createAudioResource(Readable.from([audio]), { inputType: StreamType.Raw }));
-    await entersState(session.player, AudioPlayerStatus.Playing, 5_000);
-    await entersState(session.player, AudioPlayerStatus.Idle, 120_000);
+    const result = await onSpeech(userId, transcript, say);
+    if (!saidSomething && result?.reply) say(result.reply, result.voice);
+    await chain;
   } finally {
     session.speaking = false;
   }
+}
+
+// Say something out loud in the voice channel (e.g. a hello when joining).
+export async function sayInVoice(guildId, text, voice) {
+  const session = sessions.get(guildId);
+  if (!session) return;
+  session.queue = session.queue.then(() => playText(session, text, voice)).catch((err) => {
+    console.error("Voice error:", err);
+  });
+  return session.queue;
+}
+
+async function playText(session, text, voice) {
+  const audio = await textToSpeech(text, voice);
+  session.speaking = true;
+  try {
+    await playAudio(session, audio);
+  } finally {
+    session.speaking = false;
+  }
+}
+
+async function playAudio(session, audio) {
+  session.player.play(createAudioResource(Readable.from([audio]), { inputType: StreamType.Raw }));
+  await entersState(session.player, AudioPlayerStatus.Playing, 5_000);
+  await entersState(session.player, AudioPlayerStatus.Idle, 120_000);
 }
