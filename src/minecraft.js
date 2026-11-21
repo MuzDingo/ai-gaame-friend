@@ -8,6 +8,9 @@ import collectPkg from "mineflayer-collectblock";
 
 const { pathfinder, Movements, goals } = pathfinderPkg;
 
+// Newest Minecraft Java version the bot toolkit can play.
+export const LATEST_VERSION = mineflayer.testedVersions[mineflayer.testedVersions.length - 1];
+
 let bot = null; // the Minecraft player, when connected
 let state = {
   skill: 5,

@@ -235,6 +235,13 @@ async function handleMinecraftCommand(message, args) {
         return message.channel.send(`✅ I'm in! Talk to me in Minecraft chat, here, or in voice. Try "follow me" or "get some wood".${hint}`);
       } catch (err) {
         console.error("Minecraft join error:", err);
+        const tooNew = err.message.match(/No data available for version (\S+)|unsupported protocol version/i);
+        if (tooNew) {
+          return message.channel.send(
+            `❌ This world is on Minecraft **${tooNew[1] || "a newer version"}**, which I can't play yet. The newest version I support is **${mc.LATEST_VERSION}**. ` +
+            "Play on that version for now (see \"Minecraft version\" in the README), or ask the server owner to add ViaVersion."
+          );
+        }
         return message.channel.send(`❌ Couldn't join Minecraft: ${err.message}`.slice(0, 1900));
       }
     }

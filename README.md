@@ -135,6 +135,15 @@ Its **gamer skill** setting (`!friend set gamerSkill 1` to `10`) changes how it 
 
 Type `!friend mc join the.server.address` (add `:port` if the server uses one). If the server has a whitelist, add the friend's Minecraft name to it first.
 
+### Minecraft version
+
+The friend can play Minecraft Java up to the newest version its bot toolkit supports (26.1.2 right now). New Minecraft versions usually get support a few weeks to months after release. If your game is newer, the friend says so when it tries to join.
+
+- **Single player:** open the Minecraft Launcher, go to **Installations** → **New installation**, pick version **release 26.1.2**, and play that installation. Use a **new world or a copy** of your world. Opening a world in an older version than it was last played in can break it.
+- **Hosted servers:** ask the owner to install the **ViaVersion** plugin. It lets players on older versions join, including the friend.
+
+When a newer toolkit is released, download the latest code and run `npm update` to get it.
+
 ### Modpacks
 
 The friend speaks plain Minecraft. Vanilla servers, and Fabric/Paper/Spigot servers with server-side plugins or mods, work. Modpacks that need every player to install the same mods (most Forge and NeoForge packs, big Fabric packs) won't let the friend join.
