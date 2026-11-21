@@ -105,12 +105,26 @@ To stop the friend, click the Terminal window and press Ctrl + C. It's only onli
 
 ## Playing Minecraft together
 
-Your friend joins as a real player on **Minecraft Java edition**. It can:
+Your friend joins as a real player on **Minecraft Java edition**. Just ask it in Minecraft chat, Discord, or voice. It can:
 
-- **Follow you** around, or **come to you**
-- **Gather blocks**: wood, stone, ores, dirt, sand, and more
-- **Guard you** by fighting zombies, skeletons, spiders, and creepers near you (it never attacks players)
-- **Chat**: talk to it in Minecraft chat, here in Discord, or in voice. Saying "follow me" in voice works while you play.
+| Ability | Try saying |
+|---|---|
+| Follow you, come to you, stop | "follow me", "come here", "stop" |
+| Gather blocks | "get 16 oak logs", "mine some coal" |
+| Fight mobs, guard you | "guard me", "kill that zombie" |
+| Give you items | "give me 10 iron", "toss me some bread" |
+| Use chests and barrels | "put everything in the chest", "grab 20 cobblestone from the chest" |
+| Craft (it chains steps itself) | "make me a stone pickaxe", "craft 16 torches" |
+| Smelt in a furnace | "smelt the raw iron", "cook the beef" |
+| Remember places | "remember this as home", "go back to the mine", "go to 100 64 -200" |
+| Sleep | "go to bed" |
+| Farm | "harvest the wheat" (it replants too) |
+| Animals | "breed the cows", "hunt some chickens" |
+| Build | "build a cobblestone wall", "make a 5 by 5 shelter out of planks" |
+
+It also does these on its own: **eats** when hungry, **wears the best armor** it has, **holds its best weapon** in fights, and **comes back to you** after it dies.
+
+Building works in front of where you're facing. It can build walls, floors, pillars and small shelters, up to 9 x 9 x 5. It needs the blocks in its inventory, so give it some or ask it to gather them first.
 
 Its **gamer skill** setting (`!friend set gamerSkill 1` to `10`) changes how it plays. Low skill reacts slowly, doesn't sprint or parkour, and gathers less per trip. High skill reacts fast, sprints, spots mobs from further away, and fights better.
 
