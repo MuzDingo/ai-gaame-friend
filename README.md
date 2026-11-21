@@ -29,6 +29,7 @@ A customizable AI friend that hangs out on Discord and plays co-op games like Mi
 | `!friend mc join <address>` | Joins a Minecraft server, e.g. `!friend mc join play.example.com` |
 | `!friend mc join <port>` | Joins your single player world after you click Open to LAN |
 | `!friend mc leave` / `!friend mc status` | Leaves Minecraft, or shows what it's doing |
+| `!friend mc logout` | Forgets the friend's Minecraft sign-in so you can sign in again |
 | `!friend set minecraftName Steve` | Tells your friend which Minecraft player is you |
 | `!friend join` | Joins the voice channel you're in, listens, and talks back |
 | `!friend leave` | Leaves the voice channel |
@@ -135,6 +136,15 @@ Its **gamer skill** setting (`!friend set gamerSkill 1` to `10`) changes how it 
 
 Type `!friend mc join the.server.address` (add `:port` if the server uses one). If the server has a whitelist, add the friend's Minecraft name to it first.
 
+### Minecraft version
+
+The friend can play Minecraft Java up to the newest version its bot toolkit supports (26.1.2 right now). New Minecraft versions usually get support a few weeks to months after release. If your game is newer, the friend says so when it tries to join.
+
+- **Single player:** open the Minecraft Launcher, go to **Installations** → **New installation**, pick version **release 26.1.2**, and play that installation. Use a **new world or a copy** of your world. Opening a world in an older version than it was last played in can break it.
+- **Hosted servers:** ask the owner to install the **ViaVersion** plugin. It lets players on older versions join, including the friend.
+
+When a newer toolkit is released, download the latest code and run `npm update` to get it.
+
 ### Modpacks
 
 The friend speaks plain Minecraft. Vanilla servers, and Fabric/Paper/Spigot servers with server-side plugins or mods, work. Modpacks that need every player to install the same mods (most Forge and NeoForge packs, big Fabric packs) won't let the friend join.
@@ -184,6 +194,7 @@ If a name doesn't work, the friend uses the default voice instead, and the black
 - **"I couldn't join the voice channel"**: re-invite the bot with the Connect and Speak permissions (step 3.6).
 - **Joins voice but never answers**: check the black window for errors. Make sure your Discord microphone works and that you aren't muted. Try talking a bit longer, at least a full sentence.
 - **"Couldn't join Minecraft"**: check the address and port, make sure the world is still open to LAN, and check that the server version is Java edition. If it says the version isn't supported, set `MC_VERSION` in `.env` to the server's version, like `1.21.4`.
+- **"doesn't have a Minecraft Java profile" / "does the account own minecraft?"**: the friend signed in with the wrong account, or its account has no profile name yet. Check at minecraft.net (signed in as the friend's account) that it owns Java and has a profile name. Then type `!friend mc logout` and `!friend mc join` again, and sign in with the friend's account when the code appears. Use a private browser window so your own login doesn't get used by accident.
 - **Friend can't find you in Minecraft**: set `!friend set minecraftName` to your exact Minecraft name, and stand within about 30 blocks of it.
 - **It says "my brain glitched"**: look at the Terminal window for the error. Usually the Claude key is wrong or out of credit.
 
