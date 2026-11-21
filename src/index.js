@@ -235,6 +235,13 @@ async function handleMinecraftCommand(message, args) {
         return message.channel.send(`✅ I'm in! Talk to me in Minecraft chat, here, or in voice. Try "follow me" or "get some wood".${hint}`);
       } catch (err) {
         console.error("Minecraft join error:", err);
+        if (/Failed to obtain profile data|does the account own minecraft/i.test(err.message)) {
+          return message.channel.send(
+            "❌ The Microsoft account I signed in with doesn't have a Minecraft Java profile I can use. " +
+            `Type \`${PREFIX} mc logout\`, then \`${PREFIX} mc join\` again, and sign in with **the friend's** account when I post the code ` +
+            "(a private browser window helps). That account needs Minecraft Java and a profile name set at minecraft.net."
+          );
+        }
         const tooNew = err.message.match(/No data available for version (\S+)|unsupported protocol version/i);
         if (tooNew) {
           return message.channel.send(
@@ -245,13 +252,16 @@ async function handleMinecraftCommand(message, args) {
         return message.channel.send(`❌ Couldn't join Minecraft: ${err.message}`.slice(0, 1900));
       }
     }
+    case "logout":
+      mc.logout();
+      return message.reply(`Signed out of the friend's Minecraft account. Next time you type \`${PREFIX} mc join\`, I'll post a new sign-in code.`);
     case "leave":
       mc.disconnect();
       return message.reply("Left Minecraft. GG!");
     case "status":
       return message.reply(mc.status());
     default:
-      return message.reply(`Use \`${PREFIX} mc join <address>\`, \`${PREFIX} mc join <LAN port>\`, \`${PREFIX} mc leave\` or \`${PREFIX} mc status\`.`);
+      return message.reply(`Use \`${PREFIX} mc join <address>\`, \`${PREFIX} mc join <LAN port>\`, \`${PREFIX} mc leave\`, \`${PREFIX} mc status\` or \`${PREFIX} mc logout\`.`);
   }
 }
 

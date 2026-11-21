@@ -1,6 +1,8 @@
 // Lets the AI friend join a Minecraft Java server as a real player.
 // It can follow you, come to you, gather blocks, fight hostile mobs and
 // chat in game. Claude decides which action to take from what you say.
+import fs from "node:fs";
+import path from "node:path";
 import mineflayer from "mineflayer";
 import pathfinderPkg from "mineflayer-pathfinder";
 import pvpPkg from "mineflayer-pvp";
@@ -10,6 +12,15 @@ const { pathfinder, Movements, goals } = pathfinderPkg;
 
 // Newest Minecraft Java version the bot toolkit can play.
 export const LATEST_VERSION = mineflayer.testedVersions[mineflayer.testedVersions.length - 1];
+
+// Where the friend's Minecraft login is saved (separate from your own Minecraft Launcher login).
+const LOGIN_FOLDER = path.resolve("data/minecraft-login");
+
+// Forget the friend's saved Minecraft login, so the next join asks for a fresh sign-in code.
+export function logout() {
+  disconnect();
+  fs.rmSync(LOGIN_FOLDER, { recursive: true, force: true });
+}
 
 let bot = null; // the Minecraft player, when connected
 let state = {
@@ -37,6 +48,7 @@ export function connect({ host, port, username, auth, version, skill, ownerName,
       username,
       auth, // "microsoft" for real accounts, "offline" for servers with online-mode off
       version: version || false, // false = detect automatically
+      profilesFolder: LOGIN_FOLDER,
       onMsaCode: (data) => {
         state.log(
           `🔑 To log the friend into its Minecraft account, open ${data.verification_uri} and enter the code **${data.user_code}**. You only need to do this once.`
