@@ -7,6 +7,8 @@ import mineflayer from "mineflayer";
 import pathfinderPkg from "mineflayer-pathfinder";
 import pvpPkg from "mineflayer-pvp";
 import collectPkg from "mineflayer-collectblock";
+import armorManager from "mineflayer-armor-manager";
+import { SKILL_TOOLS, runSkill, attachHabits, equipBestWeapon } from "./mcSkills.js";
 
 const { pathfinder, Movements, goals } = pathfinderPkg;
 
@@ -27,6 +29,8 @@ let state = {
   skill: 5,
   ownerName: null, // Minecraft name of the person who invited the friend
   guarding: false,
+  following: null, // player name the friend is following
+  serverKey: "server", // which server's saved places to use
   onChat: null, // (mcUsername, message) => Promise<string | null>
   log: () => {}, // posts status lines to Discord
 };
@@ -39,7 +43,11 @@ export function isConnected() {
 
 export function connect({ host, port, username, auth, version, skill, ownerName, onChat, log }) {
   if (bot) disconnect();
-  state = { ...state, skill: clampSkill(skill), ownerName, onChat, log: log || (() => {}), guarding: false };
+  state = {
+    ...state, skill: clampSkill(skill), ownerName, onChat, log: log || (() => {}), guarding: false, following: null,
+    // Single player LAN worlds share one list of saved places.
+    serverKey: ["localhost", "127.0.0.1"].includes(String(host)) ? "single-player" : String(host).toLowerCase(),
+  };
 
   return new Promise((resolve, reject) => {
     const b = mineflayer.createBot({
@@ -60,12 +68,14 @@ export function connect({ host, port, username, auth, version, skill, ownerName,
     b.loadPlugin(pathfinder);
     b.loadPlugin(pvpPkg.plugin);
     b.loadPlugin(collectPkg.plugin);
+    b.loadPlugin(armorManager); // puts on the best armor automatically
 
     const timeout = setTimeout(() => reject(new Error("Timed out joining the server.")), 5 * 60 * 1000);
 
     b.once("spawn", () => {
       clearTimeout(timeout);
       applySkill();
+      attachHabits(b, { state, log: (t) => state.log(t) });
       resolve();
     });
 
@@ -89,10 +99,22 @@ export function connect({ host, port, username, auth, version, skill, ownerName,
     });
 
     // Guard mode: defend against hostile mobs near the owner.
+    let reacting = false;
     b.on("physicsTick", () => {
-      if (!state.guarding || b.pvp.target) return;
+      if (!state.guarding || b.pvp.target || reacting) return;
       const mob = nearestHostile(guardRadius());
-      if (mob) setTimeout(() => b.pvp?.attack(mob), reactionDelay());
+      if (!mob) return;
+      reacting = true;
+      setTimeout(async () => {
+        await equipBestWeapon(b);
+        b.pvp?.attack(mob);
+        reacting = false;
+      }, reactionDelay());
+    });
+    // When a fight ends, go back to following.
+    b.on("stoppedAttacking", () => {
+      const target = state.following && b.players[state.following]?.entity;
+      if (target) b.pathfinder.setGoal(new goals.GoalFollow(target, state.skill >= 7 ? 2 : 3), true);
     });
   });
 }
@@ -202,7 +224,7 @@ export function status() {
 
 // ---------- Actions Claude can choose ----------
 
-export const TOOLS = [
+const BASE_TOOLS = [
   {
     name: "follow_player",
     description: "Follow a player around in Minecraft until told to stop.",
@@ -262,6 +284,8 @@ export const TOOLS = [
   },
 ];
 
+export const TOOLS = [...BASE_TOOLS, ...SKILL_TOOLS];
+
 // Runs one action. Returns a short text result for Claude.
 export async function runTool(name, input, talkingTo) {
   if (!isConnected()) return "You are not in Minecraft right now.";
@@ -274,6 +298,7 @@ export async function runTool(name, input, talkingTo) {
       if (!target) return `Can't see ${who || "anyone"} nearby. They may be too far away.`;
       bot.pvp.stop();
       bot.pathfinder.setGoal(new goals.GoalFollow(target, state.skill >= 7 ? 2 : 3), true);
+      state.following = target.username;
       return `Now following ${target.username}.`;
     }
     case "come_to_player": {
@@ -285,6 +310,7 @@ export async function runTool(name, input, talkingTo) {
     }
     case "stop":
       state.guarding = false;
+      state.following = null;
       bot.pvp.stop();
       bot.pathfinder.setGoal(null);
       Promise.resolve(bot.collectBlock?.cancelTask?.()).catch(() => {});
@@ -298,13 +324,18 @@ export async function runTool(name, input, talkingTo) {
     case "attack_nearest_mob": {
       const mob = nearestHostile(16);
       if (!mob) return "No hostile mobs nearby.";
+      await equipBestWeapon(bot);
       bot.pvp.attack(mob);
       return `Attacking a ${mob.name}.`;
     }
     case "check_status":
       return status();
-    default:
-      return `Unknown action ${name}.`;
+    default: {
+      const result = await runSkill(name, input || {}, {
+        bot, state, log: (t) => state.log(t), targetPlayer: (n) => targetPlayer(n || who), serverKey: state.serverKey,
+      });
+      return result ?? `Unknown action ${name}.`;
+    }
   }
 }
 
